@@ -10,7 +10,10 @@ export default async function AccountPage() {
       <div className="rounded border p-6">
         <h1 className="text-2xl font-semibold">My Account</h1>
         <p className="mt-2 text-sm text-zinc-600">Please sign in to view your account.</p>
-        <Link href="/auth/login" className="mt-4 inline-flex rounded bg-black px-4 py-2 text-sm text-white">
+        <Link
+          href="/auth/login"
+          className="mt-4 inline-flex rounded bg-black px-4 py-2 text-sm text-white"
+        >
           Log In
         </Link>
       </div>

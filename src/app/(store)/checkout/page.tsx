@@ -57,10 +57,15 @@ export default function CheckoutPage() {
 
         <div className="space-y-3">
           <Label>Delivery Method</Label>
-          <RadioGroup value={deliveryMethod} onValueChange={(value) => setDeliveryMethod(value as 'shipping' | 'pickup')}>
+          <RadioGroup
+            value={deliveryMethod}
+            onValueChange={(value) => setDeliveryMethod(value as 'shipping' | 'pickup')}
+          >
             <div className="flex items-center gap-2">
               <RadioGroupItem value="shipping" id="shipping" />
-              <Label htmlFor="shipping">Shipping (1-3 days, {formatMmk(DEFAULT_SHIPPING_FEE)})</Label>
+              <Label htmlFor="shipping">
+                Shipping (1-3 days, {formatMmk(DEFAULT_SHIPPING_FEE)})
+              </Label>
             </div>
             <div className="flex items-center gap-2">
               <RadioGroupItem value="pickup" id="pickup" />
@@ -79,7 +84,11 @@ export default function CheckoutPage() {
           <Textarea id="notes" placeholder="Optional delivery instructions" />
         </div>
 
-        <Button type="submit" className="w-full bg-black text-white hover:bg-zinc-800" disabled={items.length === 0}>
+        <Button
+          type="submit"
+          className="w-full bg-black text-white hover:bg-zinc-800"
+          disabled={items.length === 0}
+        >
           Place Order
         </Button>
       </form>

@@ -12,7 +12,9 @@ import { Product } from '@/lib/types';
 
 function totalStock(product: Product): number {
   return product.colorVariants.reduce((sum, variant) => {
-    return sum + Object.values(variant.stock).reduce((stockSum, value) => stockSum + (value ?? 0), 0);
+    return (
+      sum + Object.values(variant.stock).reduce((stockSum, value) => stockSum + (value ?? 0), 0)
+    );
   }, 0);
 }
 
@@ -42,7 +44,10 @@ export function ProductsTable() {
       accessorKey: 'name',
       header: 'Name',
       cell: ({ row }) => (
-        <Link href={`/admin/products/${row.original._id}/edit`} className="font-medium hover:underline">
+        <Link
+          href={`/admin/products/${row.original._id}/edit`}
+          className="font-medium hover:underline"
+        >
           {row.original.name}
         </Link>
       ),

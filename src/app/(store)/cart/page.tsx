@@ -28,7 +28,10 @@ export default function CartPage() {
               if (!product) return null;
 
               return (
-                <article key={`${item.productId}-${item.colorVariantId}-${item.size}`} className="rounded border p-4">
+                <article
+                  key={`${item.productId}-${item.colorVariantId}-${item.size}`}
+                  className="rounded border p-4"
+                >
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="font-medium">{product.name}</h2>
@@ -36,7 +39,9 @@ export default function CartPage() {
                         Size {item.size} · {item.colorVariantId}
                       </p>
                     </div>
-                    <p className="font-semibold">{formatMmk(itemPrice(item.productId) * item.quantity)}</p>
+                    <p className="font-semibold">
+                      {formatMmk(itemPrice(item.productId) * item.quantity)}
+                    </p>
                   </div>
 
                   <div className="mt-3 flex items-center gap-2">

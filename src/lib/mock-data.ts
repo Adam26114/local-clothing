@@ -1,12 +1,5 @@
 import { BRAND, DEFAULT_SHIPPING_FEE } from '@/lib/constants';
-import {
-  Category,
-  InventoryAuditLog,
-  Order,
-  Product,
-  StoreSettings,
-  User,
-} from '@/lib/types';
+import { Category, InventoryAuditLog, Order, Product, StoreSettings, User } from '@/lib/types';
 
 const now = Date.now();
 

@@ -60,11 +60,17 @@ export function ProductEditor({ mode, productId }: ProductEditorProps) {
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label>Name</Label>
-          <Input value={form.name} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} />
+          <Input
+            value={form.name}
+            onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+          />
         </div>
         <div className="space-y-2">
           <Label>SKU</Label>
-          <Input value={form.sku} onChange={(event) => setForm((prev) => ({ ...prev, sku: event.target.value }))} />
+          <Input
+            value={form.sku}
+            onChange={(event) => setForm((prev) => ({ ...prev, sku: event.target.value }))}
+          />
         </div>
       </div>
 
@@ -188,7 +194,9 @@ export function ProductEditor({ mode, productId }: ProductEditorProps) {
                   onClick={() =>
                     setForm((prev) => ({
                       ...prev,
-                      colorVariants: prev.colorVariants.filter((_, entryIndex) => entryIndex !== index),
+                      colorVariants: prev.colorVariants.filter(
+                        (_, entryIndex) => entryIndex !== index
+                      ),
                     }))
                   }
                   disabled={form.colorVariants.length <= 1}

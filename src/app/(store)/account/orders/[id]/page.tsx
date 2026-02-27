@@ -3,8 +3,13 @@ import { notFound } from 'next/navigation';
 import { formatMmk } from '@/lib/currency';
 import { orders } from '@/lib/mock-data';
 
-export default function AccountOrderDetailPage({ params }: { params: { id: string } }) {
-  const order = orders.find((item) => item._id === params.id);
+export default async function AccountOrderDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const order = orders.find((item) => item._id === id);
   if (!order) {
     notFound();
   }

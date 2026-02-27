@@ -5,12 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-export default function LoginPage({ searchParams }: { searchParams?: { error?: string } }) {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ error?: string }>;
+}) {
+  const resolvedSearchParams = (await searchParams) ?? {};
+
   return (
     <div className="mx-auto max-w-md rounded border p-6">
       <h1 className="mb-1 text-2xl font-semibold">Sign In</h1>
       <p className="mb-6 text-sm text-zinc-600">Use email/password. Superadmin is env-based.</p>
-      {searchParams?.error ? (
+      {resolvedSearchParams.error ? (
         <p className="mb-4 rounded bg-red-100 px-3 py-2 text-sm text-red-700">
           Please fill in all required fields.
         </p>

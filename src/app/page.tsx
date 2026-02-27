@@ -20,7 +20,9 @@ export default function HomePage() {
       <section className="grid gap-8 rounded bg-zinc-100 p-8 lg:grid-cols-2">
         <div className="space-y-4">
           <p className="text-xs tracking-[0.12em] text-zinc-600">KHIT SPRING DROP</p>
-          <h1 className="text-4xl font-bold tracking-tight lg:text-5xl">{storeSettings.heroTitle}</h1>
+          <h1 className="text-4xl font-bold tracking-tight lg:text-5xl">
+            {storeSettings.heroTitle}
+          </h1>
           <p className="max-w-md text-zinc-600">{storeSettings.heroSubtitle}</p>
           <Link
             href={storeSettings.heroCtaLink ?? '/new'}
