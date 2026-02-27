@@ -49,6 +49,8 @@ export type AdminDataTableProps<TData, TValue> = {
   defaultPageSize?: number;
   rowsPerPage?: number[];
   toolbar?: React.ReactNode;
+  globalFilterDebounceMs?: number;
+  onSelectedRowsChange?: (rows: TData[]) => void;
 };
 
 export function withRowSelection<TData, TValue>(
@@ -89,10 +91,13 @@ export function AdminDataTable<TData, TValue>({
   defaultPageSize = 20,
   rowsPerPage = [10, 20, 50, 100],
   toolbar,
+  globalFilterDebounceMs = 300,
+  onSelectedRowsChange,
 }: AdminDataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
   const [globalFilter, setGlobalFilter] = React.useState('');
+  const [searchInput, setSearchInput] = React.useState('');
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
 
   React.useEffect(() => {
@@ -113,6 +118,14 @@ export function AdminDataTable<TData, TValue>({
   React.useEffect(() => {
     window.localStorage.setItem(`khit_columns_${tableId}`, JSON.stringify(columnVisibility));
   }, [tableId, columnVisibility]);
+
+  React.useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setGlobalFilter(searchInput);
+    }, globalFilterDebounceMs);
+
+    return () => window.clearTimeout(timer);
+  }, [globalFilterDebounceMs, searchInput]);
 
   const table = useReactTable({
     data,
@@ -138,14 +151,20 @@ export function AdminDataTable<TData, TValue>({
     },
   });
 
+  React.useEffect(() => {
+    if (!onSelectedRowsChange) return;
+    const selected = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
+    onSelectedRowsChange(selected);
+  }, [onSelectedRowsChange, rowSelection, table, data]);
+
   return (
     <div className="space-y-3 rounded-lg border bg-white p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="relative w-full max-w-sm">
           <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400" />
           <Input
-            value={globalFilter}
-            onChange={(event) => setGlobalFilter(event.target.value)}
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
             className="pl-9"
             placeholder={searchPlaceholder}
           />

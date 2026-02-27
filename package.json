@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
+    "convex:codegen": "convex codegen",
     "convex:dev": "convex dev",
     "convex:deploy": "convex deploy"
   },

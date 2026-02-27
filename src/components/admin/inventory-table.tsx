@@ -1,46 +1,40 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
+import {
+  listInventoryAuditLogsAction,
+  updateInventoryStockAction,
+} from '@/app/(admin)/admin/inventory/actions';
 import { AdminDataTable, withRowSelection } from '@/components/admin/data-table';
-import { products } from '@/lib/mock-data';
-import { SizeKey } from '@/lib/types';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import type { InventoryRow } from '@/lib/data/repositories/types';
+import type { InventoryAuditLog } from '@/lib/types';
 
-type InventoryRow = {
-  productId: string;
-  productName: string;
-  variantId: string;
-  colorName: string;
-  size: SizeKey;
-  stock: number;
+type InventoryTableProps = {
+  initialRows: InventoryRow[];
 };
 
-function buildRows(): InventoryRow[] {
-  const rows: InventoryRow[] = [];
-  for (const product of products) {
-    for (const variant of product.colorVariants) {
-      for (const size of variant.selectedSizes) {
-        rows.push({
-          productId: product._id,
-          productName: product.name,
-          variantId: variant.id,
-          colorName: variant.colorName,
-          size,
-          stock: variant.stock[size] ?? 0,
-        });
-      }
-    }
-  }
-  return rows;
+function rowKey(row: Pick<InventoryRow, 'productId' | 'variantId' | 'size'>): string {
+  return `${row.productId}::${row.variantId}::${row.size}`;
 }
 
-export function InventoryTable() {
-  const [rows, setRows] = useState(buildRows());
+export function InventoryTable({ initialRows }: InventoryTableProps) {
+  const [rows, setRows] = useState<InventoryRow[]>(initialRows);
   const [lowOnly, setLowOnly] = useState(false);
   const [outOnly, setOutOnly] = useState(false);
+  const [editingValues, setEditingValues] = useState<Record<string, number>>({});
+  const [selectedRows, setSelectedRows] = useState<InventoryRow[]>([]);
+  const [logTarget, setLogTarget] = useState<InventoryRow | null>(null);
+  const [logs, setLogs] = useState<InventoryAuditLog[]>([]);
+  const [isPending, startTransition] = useTransition();
+  const [isLoadingLogs, startLogsTransition] = useTransition();
 
-  const filtered = useMemo(() => {
+  const filteredRows = useMemo(() => {
     return rows.filter((row) => {
       if (outOnly) return row.stock === 0;
       if (lowOnly) return row.stock < 5;
@@ -48,39 +42,129 @@ export function InventoryTable() {
     });
   }, [rows, lowOnly, outOnly]);
 
+  const commitStock = (row: InventoryRow, nextValue: number) => {
+    const normalized = Math.max(0, Math.floor(nextValue));
+    if (normalized === row.stock) {
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await updateInventoryStockAction({
+        productId: row.productId,
+        variantId: row.variantId,
+        size: row.size,
+        newValue: normalized,
+      });
+
+      if (!result.ok) {
+        toast.error(result.error);
+        setEditingValues((prev) => ({
+          ...prev,
+          [rowKey(row)]: row.stock,
+        }));
+        return;
+      }
+
+      setRows((prev) =>
+        prev.map((entry) =>
+          rowKey(entry) === rowKey(row)
+            ? {
+                ...entry,
+                stock: result.data.row.stock,
+              }
+            : entry
+        )
+      );
+
+      setEditingValues((prev) => ({
+        ...prev,
+        [rowKey(row)]: result.data.row.stock,
+      }));
+
+      if (logTarget && rowKey(logTarget) === rowKey(row)) {
+        setLogs((prev) => [result.data.log, ...prev]);
+      }
+
+      toast.success('Stock updated.');
+    });
+  };
+
+  const openLogs = (row: InventoryRow) => {
+    setLogTarget(row);
+    startLogsTransition(async () => {
+      const result = await listInventoryAuditLogsAction({
+        productId: row.productId,
+        variantId: row.variantId,
+        size: row.size,
+        limit: 20,
+      });
+
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+
+      setLogs(result.data);
+    });
+  };
+
   const columns: Array<ColumnDef<InventoryRow>> = [
     { accessorKey: 'productName', header: 'Product' },
     { accessorKey: 'colorName', header: 'Variant (Color)' },
     { accessorKey: 'size', header: 'Size' },
     {
+      accessorKey: 'isPublished',
+      header: 'Status',
+      cell: ({ row }) => (
+        <Badge variant={row.original.isPublished ? 'default' : 'secondary'}>
+          {row.original.isPublished ? 'Published' : 'Draft'}
+        </Badge>
+      ),
+    },
+    {
       accessorKey: 'stock',
       header: 'Stock Quantity',
+      cell: ({ row }) => {
+        const key = rowKey(row.original);
+        const value = editingValues[key] ?? row.original.stock;
+
+        return (
+          <input
+            type="number"
+            min={0}
+            className="w-20 rounded border px-2 py-1 text-sm"
+            value={value}
+            onChange={(event) => {
+              const parsed = Number(event.target.value);
+              setEditingValues((prev) => ({
+                ...prev,
+                [key]: Number.isFinite(parsed) ? parsed : 0,
+              }));
+            }}
+            onBlur={() => commitStock(row.original, value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.currentTarget.blur();
+              }
+            }}
+          />
+        );
+      },
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
       cell: ({ row }) => (
-        <input
-          type="number"
-          min={0}
-          className="w-20 rounded border px-2 py-1 text-sm"
-          value={row.original.stock}
-          onChange={(event) => {
-            const value = Number(event.target.value);
-            setRows((prev) =>
-              prev.map((entry) =>
-                entry.productId === row.original.productId &&
-                entry.variantId === row.original.variantId &&
-                entry.size === row.original.size
-                  ? { ...entry, stock: Number.isFinite(value) ? Math.max(value, 0) : 0 }
-                  : entry
-              )
-            );
-          }}
-        />
+        <Button size="sm" variant="outline" onClick={() => openLogs(row.original)}>
+          View Logs
+        </Button>
       ),
     },
   ];
 
   return (
     <div className="space-y-3">
-      <div className="flex gap-3 text-sm">
+      <div className="flex flex-wrap items-center gap-3 text-sm">
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -103,14 +187,63 @@ export function InventoryTable() {
           />
           Out of stock (= 0)
         </label>
+        {isPending ? (
+          <span className="inline-flex items-center gap-2 text-zinc-500">
+            <Loader2 className="size-4 animate-spin" /> Saving stock...
+          </span>
+        ) : null}
       </div>
+
       <AdminDataTable
         tableId="inventory"
         columns={withRowSelection(columns)}
-        data={filtered}
+        data={filteredRows}
         searchPlaceholder="Search product or color"
         defaultPageSize={50}
+        onSelectedRowsChange={setSelectedRows}
+        toolbar={
+          selectedRows.length > 0 ? (
+            <span className="text-sm text-zinc-600">{selectedRows.length} selected</span>
+          ) : null
+        }
       />
+
+      {logTarget ? (
+        <section className="rounded border bg-white p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold">Stock Audit Logs</h3>
+              <p className="text-sm text-zinc-600">
+                {logTarget.productName} · {logTarget.colorName} · {logTarget.size}
+              </p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setLogTarget(null)}>
+              Close
+            </Button>
+          </div>
+
+          {isLoadingLogs ? (
+            <p className="text-sm text-zinc-500">Loading logs...</p>
+          ) : logs.length === 0 ? (
+            <p className="text-sm text-zinc-500">No stock updates yet.</p>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {logs.map((log) => (
+                <li key={log._id} className="rounded border p-2">
+                  <p>
+                    <span className="font-medium">{log.oldValue}</span> →{' '}
+                    <span className="font-medium">{log.newValue}</span>
+                  </p>
+                  <p className="text-zinc-600">By {log.changedBy}</p>
+                  <p className="text-xs text-zinc-500">
+                    {new Date(log.changedAt).toLocaleString()}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
     </div>
   );
 }

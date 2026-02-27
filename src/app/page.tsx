@@ -1,13 +1,19 @@
 import Link from 'next/link';
 
+import { DataSourceNotice } from '@/components/shared/data-source-notice';
 import { ProductCard } from '@/components/store/product-card';
-import { getFeaturedProducts, storeSettings } from '@/lib/mock-data';
+import { getServerDataRepositories } from '@/lib/data/repositories';
 
-export default function HomePage() {
-  const featuredProducts = getFeaturedProducts();
+export default async function HomePage() {
+  const { repositories, selection } = getServerDataRepositories();
+  const [featuredProducts, storeSettings] = await Promise.all([
+    repositories.products.listFeatured(),
+    repositories.settings.get(),
+  ]);
 
   return (
     <div className="space-y-12">
+      <DataSourceNotice selection={selection} />
       {storeSettings.saleBannerEnabled ? (
         <Link
           href={storeSettings.saleBannerLink ?? '/sale'}
