@@ -3,8 +3,9 @@ import { notFound } from 'next/navigation';
 import { formatMmk } from '@/lib/currency';
 import { orders, users } from '@/lib/mock-data';
 
-export default function AdminUserDetailPage({ params }: { params: { id: string } }) {
-  const user = users.find((item) => item._id === params.id);
+export default async function AdminUserDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const user = users.find((item) => item._id === id);
   if (!user) {
     notFound();
   }

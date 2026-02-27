@@ -33,7 +33,9 @@ export function ProductCard({ product }: { product: Product }) {
           {product.salePrice ? (
             <>
               <span className="font-semibold">{formatMmk(product.salePrice)}</span>
-              <span className="text-zinc-400 line-through">{formatMmk(product.basePrice ?? 0)}</span>
+              <span className="text-zinc-400 line-through">
+                {formatMmk(product.basePrice ?? 0)}
+              </span>
             </>
           ) : (
             <span className="font-semibold">{formatMmk(product.basePrice ?? 0)}</span>

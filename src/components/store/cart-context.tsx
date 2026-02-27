@@ -31,25 +31,28 @@ function getUnitPrice(productId: string): number {
   return product.salePrice ?? product.basePrice ?? 0;
 }
 
-function isSameLine(a: Omit<StoredCartItem, 'quantity'>, b: Omit<StoredCartItem, 'quantity'>): boolean {
-  return (
-    a.productId === b.productId && a.colorVariantId === b.colorVariantId && a.size === b.size
-  );
+function isSameLine(
+  a: Omit<StoredCartItem, 'quantity'>,
+  b: Omit<StoredCartItem, 'quantity'>
+): boolean {
+  return a.productId === b.productId && a.colorVariantId === b.colorVariantId && a.size === b.size;
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<StoredCartItem[]>([]);
+  const [items, setItems] = useState<StoredCartItem[]>(() => {
+    if (typeof window === 'undefined') {
+      return [];
+    }
 
-  useEffect(() => {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
+    if (!raw) return [];
     try {
-      const parsed = JSON.parse(raw) as StoredCartItem[];
-      setItems(parsed);
+      return JSON.parse(raw) as StoredCartItem[];
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
+      return [];
     }
-  }, []);
+  });
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
@@ -84,10 +87,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return items.reduce((sum, item) => sum + getUnitPrice(item.productId) * item.quantity, 0);
   }, [items]);
 
-  const totalItems = useMemo(
-    () => items.reduce((sum, item) => sum + item.quantity, 0),
-    [items]
-  );
+  const totalItems = useMemo(() => items.reduce((sum, item) => sum + item.quantity, 0), [items]);
 
   const value = useMemo(
     () => ({ items, subtotal, totalItems, addItem, updateQuantity, removeItem, clearCart }),

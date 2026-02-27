@@ -32,7 +32,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 export type AdminDataTableProps<TData, TValue> = {
   tableId: string;
@@ -53,7 +60,10 @@ export function withRowSelection<TData, TValue>(
       header: ({ table }) => (
         <Checkbox
           aria-label="Select all"
-          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && 'indeterminate')
+          }
           onCheckedChange={(checked) => table.toggleAllPageRowsSelected(Boolean(checked))}
         />
       ),
@@ -205,8 +215,8 @@ export function AdminDataTable<TData, TValue>({
 
       <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-600">
         <p>
-          {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length}{' '}
-          row(s) selected
+          {table.getFilteredSelectedRowModel().rows.length} of{' '}
+          {table.getFilteredRowModel().rows.length} row(s) selected
         </p>
         <div className="flex items-center gap-2">
           <span>Rows:</span>
@@ -226,13 +236,28 @@ export function AdminDataTable<TData, TValue>({
           <p>
             Page {table.getState().pagination.pageIndex + 1} of {Math.max(table.getPageCount(), 1)}
           </p>
-          <Button variant="outline" size="icon" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => table.setPageIndex(0)}
+            disabled={!table.getCanPreviousPage()}
+          >
             <ChevronsLeft className="size-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
             <ChevronLeft className="size-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
             <ChevronRight className="size-4" />
           </Button>
           <Button

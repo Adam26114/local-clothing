@@ -12,7 +12,10 @@ export const list = query({
 export const byEmail = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db.query('users').withIndex('by_email', (q) => q.eq('email', args.email)).first();
+    return await ctx.db
+      .query('users')
+      .withIndex('by_email', (q) => q.eq('email', args.email))
+      .first();
   },
 });
 

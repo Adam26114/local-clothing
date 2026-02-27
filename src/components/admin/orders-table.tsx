@@ -25,7 +25,10 @@ export function OrdersTable() {
       accessorKey: 'orderNumber',
       header: 'Order #',
       cell: ({ row }) => (
-        <Link href={`/admin/orders/${row.original._id}`} className="font-medium underline-offset-2 hover:underline">
+        <Link
+          href={`/admin/orders/${row.original._id}`}
+          className="font-medium underline-offset-2 hover:underline"
+        >
           {row.original.orderNumber}
         </Link>
       ),
