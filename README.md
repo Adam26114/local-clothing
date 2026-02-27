@@ -38,6 +38,12 @@ Admin-first e-commerce platform for a Myanmar local shirt brand, implemented wit
 
 Copy `.env.example` to `.env.local` and set values as needed.
 
+### Data Source Mode
+
+- `DATA_SOURCE=mock|convex` controls server-side repository selection.
+- `NEXT_PUBLIC_DATA_SOURCE=mock|convex` is client-safe mode metadata.
+- If `DATA_SOURCE=convex` is requested but `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL` are missing, app falls back to `mock` with a visible warning banner.
+
 ## Commands
 
 ```bash
@@ -48,7 +54,10 @@ bun run test
 bun run build
 bun run format
 bun run format:check
+bun run convex:codegen
 ```
+
+`convex:codegen` requires `CONVEX_DEPLOYMENT` to be configured.
 
 ## Docker
 

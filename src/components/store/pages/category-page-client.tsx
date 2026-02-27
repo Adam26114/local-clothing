@@ -4,15 +4,21 @@ import { useMemo, useState } from 'react';
 
 import { ProductCard } from '@/components/store/product-card';
 import { Input } from '@/components/ui/input';
-import { getProductsByCategory } from '@/lib/mock-data';
+import type { Product } from '@/lib/types';
 
-export function CategoryPageClient({ category }: { category: string }) {
+export function CategoryPageClient({
+  category,
+  initialProducts,
+}: {
+  category: string;
+  initialProducts: Product[];
+}) {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<'new' | 'priceLow' | 'sale'>('new');
   const [limit, setLimit] = useState(6);
 
   const products = useMemo(() => {
-    let result = getProductsByCategory(category).filter((item) =>
+    let result = initialProducts.filter((item) =>
       item.name.toLowerCase().includes(query.toLowerCase())
     );
 
@@ -27,7 +33,7 @@ export function CategoryPageClient({ category }: { category: string }) {
     }
 
     return result;
-  }, [category, query, sort]);
+  }, [initialProducts, query, sort]);
 
   return (
     <div className="space-y-6">

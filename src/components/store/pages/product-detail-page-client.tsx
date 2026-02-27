@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Heart } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -14,19 +14,23 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { formatMmk } from '@/lib/currency';
-import { getProductBySlug, products, storeSettings } from '@/lib/mock-data';
-import { SizeKey } from '@/lib/types';
+import { Product, SizeKey, StoreSettings } from '@/lib/types';
 
-export function ProductDetailPageClient({ slug }: { slug: string }) {
-  const product = getProductBySlug(slug);
+export function ProductDetailPageClient({
+  product,
+  relatedProducts,
+  storeSettings,
+}: {
+  product: Product | undefined;
+  relatedProducts: Product[];
+  storeSettings: StoreSettings;
+}) {
   const { addItem } = useCart();
 
   const [variantIndex, setVariantIndex] = useState(0);
   const selectedVariant = product?.colorVariants[variantIndex];
   const firstSize = selectedVariant?.selectedSizes[0] ?? 'M';
   const [size, setSize] = useState<SizeKey>(firstSize as SizeKey);
-
-  const related = useMemo(() => products.filter((item) => item.slug !== slug).slice(0, 4), [slug]);
 
   if (!product || !selectedVariant) {
     return <p className="text-sm text-zinc-600">Product not found.</p>;
@@ -164,7 +168,7 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">You May Also Like</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {related.map((item) => (
+          {relatedProducts.map((item) => (
             <Link
               key={item._id}
               href={`/products/${item.slug}`}
