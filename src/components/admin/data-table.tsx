@@ -99,7 +99,12 @@ export function AdminDataTable<TData, TValue>({
     const raw = window.localStorage.getItem(`khit_columns_${tableId}`);
     if (!raw) return;
     try {
-      setColumnVisibility(JSON.parse(raw));
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        setColumnVisibility(parsed as VisibilityState);
+      } else {
+        window.localStorage.removeItem(`khit_columns_${tableId}`);
+      }
     } catch {
       window.localStorage.removeItem(`khit_columns_${tableId}`);
     }

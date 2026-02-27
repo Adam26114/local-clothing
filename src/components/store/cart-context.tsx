@@ -47,7 +47,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     try {
-      return JSON.parse(raw) as StoredCartItem[];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) {
+        window.localStorage.removeItem(STORAGE_KEY);
+        return [];
+      }
+      return parsed as StoredCartItem[];
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
       return [];
