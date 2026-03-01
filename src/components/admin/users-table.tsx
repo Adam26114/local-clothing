@@ -6,16 +6,15 @@ import type { ColumnDef } from '@tanstack/react-table';
 
 import { AdminDataTable, withRowSelection } from '@/components/admin/data-table';
 import { Badge } from '@/components/ui/badge';
-import { users } from '@/lib/mock-data';
 import { User } from '@/lib/types';
 
-export function UsersTable() {
+export function UsersTable({ initialUsers }: { initialUsers: User[] }) {
   const [role, setRole] = useState<'all' | 'customer' | 'admin'>('all');
 
   const data = useMemo(() => {
-    if (role === 'all') return users;
-    return users.filter((user) => user.role === role);
-  }, [role]);
+    if (role === 'all') return initialUsers;
+    return initialUsers.filter((user) => user.role === role);
+  }, [role, initialUsers]);
 
   const columns: Array<ColumnDef<User>> = [
     {

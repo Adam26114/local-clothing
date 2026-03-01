@@ -10,8 +10,11 @@ export default async function AdminProductsPage() {
   ]);
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Products</h1>
+    <div className="space-y-6 px-4 lg:px-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Products</h1>
+        <p className="text-sm text-zinc-600">Manage catalog content, variants, and publish status.</p>
+      </div>
       <DataSourceNotice selection={selection} />
       <ProductsTable initialProducts={products} categories={categories} />
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Loader2 } from 'lucide-react';
@@ -30,6 +31,7 @@ function totalStock(product: Product): number {
 }
 
 export function ProductsTable({ initialProducts, categories }: ProductsTableProps) {
+  const router = useRouter();
   const [rows, setRows] = useState<Product[]>(initialProducts);
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -232,11 +234,12 @@ export function ProductsTable({ initialProducts, categories }: ProductsTableProp
         data={filteredRows}
         searchPlaceholder="Search by name, SKU, description"
         onSelectedRowsChange={setSelectedProducts}
+        enableRowDrag
+        getRowId={(row) => row._id}
+        addButtonLabel="Add Product"
+        onAddClick={() => router.push('/admin/products/new')}
         toolbar={
           <div className="flex items-center gap-2">
-            <Button asChild size="sm" className="bg-black text-white hover:bg-zinc-800">
-              <Link href="/admin/products/new">Add Product</Link>
-            </Button>
             <Button
               size="sm"
               variant="outline"

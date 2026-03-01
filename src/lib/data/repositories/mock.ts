@@ -2,26 +2,35 @@ import { BRAND } from '@/lib/constants';
 import {
   categories as seedCategories,
   inventoryAuditLogs as seedInventoryAuditLogs,
+  orders as seedOrders,
   products as seedProducts,
   storeSettings as seedStoreSettings,
+  users as seedUsers,
 } from '@/lib/mock-data';
 import type {
   Category,
   InventoryAuditLog,
+  Order,
   Product,
   SizeKey,
   StoreSettings,
+  User,
   VariantMeasurement,
 } from '@/lib/types';
 
 import type {
   CategoryRepository,
+  DashboardRepository,
   DataRepositories,
   InventoryRepository,
+  OrdersRepository,
   ProductRepository,
   UpdateStockInput,
+  RevenueRange,
+  RevenueSeriesPoint,
   InventoryRow,
   SettingsRepository,
+  UsersRepository,
 } from '@/lib/data/repositories/types';
 
 function deepClone<T>(value: T): T {
@@ -31,11 +40,15 @@ function deepClone<T>(value: T): T {
 const state: {
   categories: Category[];
   products: Product[];
+  users: User[];
+  orders: Order[];
   storeSettings: StoreSettings;
   inventoryAuditLogs: InventoryAuditLog[];
 } = {
   categories: deepClone(seedCategories),
   products: deepClone(seedProducts),
+  users: deepClone(seedUsers),
+  orders: deepClone(seedOrders),
   storeSettings: deepClone(seedStoreSettings),
   inventoryAuditLogs: deepClone(seedInventoryAuditLogs),
 };
@@ -384,11 +397,104 @@ function createInventoryRepository(): InventoryRepository {
   };
 }
 
+function createOrdersRepository(): OrdersRepository {
+  return {
+    async list() {
+      return deepClone(state.orders).sort((a, b) => b.createdAt - a.createdAt);
+    },
+
+    async getById(id) {
+      const row = state.orders.find((order) => order._id === id);
+      return row ? deepClone(row) : undefined;
+    },
+  };
+}
+
+function createUsersRepository(): UsersRepository {
+  return {
+    async list() {
+      return deepClone(state.users).sort((a, b) => b.createdAt - a.createdAt);
+    },
+
+    async getById(id) {
+      const row = state.users.find((user) => user._id === id);
+      return row ? deepClone(row) : undefined;
+    },
+  };
+}
+
+function getRangeDays(range: RevenueRange): number {
+  if (range === '7d') return 7;
+  if (range === '30d') return 30;
+  return 90;
+}
+
+function dayKey(timestamp: number): string {
+  return new Date(timestamp).toISOString().slice(0, 10);
+}
+
+function buildRevenueSeries(range: RevenueRange): RevenueSeriesPoint[] {
+  const totalDays = getRangeDays(range);
+  const today = new Date();
+  const points: RevenueSeriesPoint[] = [];
+
+  for (let i = totalDays - 1; i >= 0; i -= 1) {
+    const date = new Date(today);
+    date.setHours(0, 0, 0, 0);
+    date.setDate(today.getDate() - i);
+    points.push({
+      date: date.toISOString().slice(0, 10),
+      revenue: 0,
+      orderCount: 0,
+    });
+  }
+
+  const indexByDate = new Map(points.map((point, idx) => [point.date, idx]));
+
+  for (const order of state.orders) {
+    if (order.status === 'cancelled') continue;
+    const key = dayKey(order.createdAt);
+    const idx = indexByDate.get(key);
+    if (idx == null) continue;
+    points[idx].revenue += order.total;
+    points[idx].orderCount += 1;
+  }
+
+  return points;
+}
+
+function createDashboardRepository(): DashboardRepository {
+  return {
+    async getKpis() {
+      const totalRevenueMmk = state.orders
+        .filter((order) => order.status !== 'cancelled')
+        .reduce((sum, order) => sum + order.total, 0);
+      const pendingOrders = state.orders.filter((order) => order.status === 'pending').length;
+      const activeProducts = state.products.filter((product) => product.isPublished).length;
+      const activeAccounts = state.users.filter((user) => user.isActive).length;
+
+      return {
+        totalRevenueMmk,
+        pendingOrders,
+        activeProducts,
+        activeAccounts,
+      };
+    },
+
+    async getRevenueSeries(range) {
+      return buildRevenueSeries(range);
+    },
+  };
+}
+
 export function createMockRepositories(): DataRepositories {
   return {
     products: createProductRepository(),
     categories: createCategoryRepository(),
     settings: createSettingsRepository(),
     inventory: createInventoryRepository(),
+    orders: createOrdersRepository(),
+    users: createUsersRepository(),
+    dashboard: createDashboardRepository(),
   };
 }

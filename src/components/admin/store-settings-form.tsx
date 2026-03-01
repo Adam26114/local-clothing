@@ -7,10 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { storeSettings } from '@/lib/mock-data';
+import type { StoreSettings } from '@/lib/types';
 
-export function StoreSettingsForm() {
-  const [form, setForm] = useState(storeSettings);
+export function StoreSettingsForm({ initialSettings }: { initialSettings: StoreSettings }) {
+  const [form, setForm] = useState(initialSettings);
 
   return (
     <form className="space-y-6 rounded border bg-white p-6">
