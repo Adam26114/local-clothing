@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 
+import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 type ProductVariant = {
@@ -26,7 +27,7 @@ type ProductInput = {
   name: string;
   slug: string;
   description: string;
-  categoryId: string;
+  categoryId: Id<'categories'>;
   basePrice?: number;
   salePrice?: number;
   isFeatured: boolean;
@@ -35,7 +36,7 @@ type ProductInput = {
 };
 
 type ProductRecord = ProductInput & {
-  _id: string;
+  _id: Id<'products'>;
   createdAt: number;
   updatedAt: number;
 };
@@ -125,7 +126,7 @@ export const list = query({
 
 export const byId = query({
   args: { id: v.id('products') },
-  handler: async (ctx, args: { id: string }) => {
+  handler: async (ctx, args: { id: Id<'products'> }) => {
     return (await ctx.db.get(args.id)) as ProductRecord | null;
   },
 });
@@ -170,7 +171,7 @@ export const update = mutation({
     id: v.id('products'),
     ...productInputValidator,
   },
-  handler: async (ctx, args: ProductInput & { id: string }) => {
+  handler: async (ctx, args: ProductInput & { id: Id<'products'> }) => {
     const { id, ...changes } = args;
     const existing = (await ctx.db.get(id)) as ProductRecord | null;
     if (!existing) {
@@ -190,7 +191,7 @@ export const update = mutation({
 
 export const softDelete = mutation({
   args: { id: v.id('products') },
-  handler: async (ctx, args: { id: string }) => {
+  handler: async (ctx, args: { id: Id<'products'> }) => {
     const existing = (await ctx.db.get(args.id)) as ProductRecord | null;
     if (!existing) return args.id;
 
@@ -201,7 +202,7 @@ export const softDelete = mutation({
 
 export const duplicate = mutation({
   args: { id: v.id('products') },
-  handler: async (ctx, args: { id: string }) => {
+  handler: async (ctx, args: { id: Id<'products'> }) => {
     const source = (await ctx.db.get(args.id)) as ProductRecord | null;
     if (!source) {
       throw new Error('Product not found.');
@@ -235,7 +236,7 @@ export const toggleBulkStatus = mutation({
     ids: v.array(v.id('products')),
     isPublished: v.boolean(),
   },
-  handler: async (ctx, args: { ids: string[]; isPublished: boolean }) => {
+  handler: async (ctx, args: { ids: Id<'products'>[]; isPublished: boolean }) => {
     let updatedCount = 0;
 
     for (const id of args.ids) {

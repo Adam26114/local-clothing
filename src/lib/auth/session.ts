@@ -1,59 +1,69 @@
-import { cookies } from 'next/headers';
+import { headers } from 'next/headers';
 
-import { Role } from '@/lib/types';
-
-const ROLE_COOKIE = 'khit_role';
-const EMAIL_COOKIE = 'khit_email';
-const NAME_COOKIE = 'khit_name';
-const SESSION_COOKIE = 'khit_session';
+import { auth } from '@/lib/auth/better-auth';
+import { getCurrentUserRole } from '@/lib/auth/role';
+import { syncDomainRoleFromAuthIdentity } from '@/lib/auth/role-sync';
+import type { Role } from '@/lib/types';
 
 export type AppSession = {
   isAuthenticated: boolean;
   email?: string;
   name?: string;
   role: Role;
+  betterAuthId?: string;
 };
 
-export function isSuperAdminEmail(email: string): boolean {
-  const allowed = (process.env.SUPERADMIN_EMAILS ?? '')
-    .split(',')
-    .map((part) => part.trim().toLowerCase())
-    .filter(Boolean);
-  return allowed.includes(email.toLowerCase());
+function toHeadersObject(input: Headers) {
+  return new Headers(input);
 }
 
 export async function getSession(): Promise<AppSession> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!token) {
+  const headerStore = await headers();
+  const result = await auth.api.getSession({
+    headers: toHeadersObject(headerStore),
+  });
+
+  if (!result?.user) {
     return { isAuthenticated: false, role: 'customer' };
   }
 
-  const roleValue = cookieStore.get(ROLE_COOKIE)?.value;
-  const role: Role = roleValue === 'admin' ? 'admin' : 'customer';
-  const email = cookieStore.get(EMAIL_COOKIE)?.value;
-  const name = cookieStore.get(NAME_COOKIE)?.value;
-  return { isAuthenticated: true, role, email, name };
-}
+  let role =
+    (await getCurrentUserRole({
+      betterAuthId: result.user.id,
+      email: result.user.email,
+    })) ?? null;
 
-export async function createSession(payload: {
-  email: string;
-  name: string;
-  role: Role;
-}): Promise<void> {
-  const cookieStore = await cookies();
-  const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  if (!role) {
+    try {
+      const synced = await syncDomainRoleFromAuthIdentity({
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+      });
+      role = synced.role;
+    } catch (error) {
+      console.error('role_sync_failed', {
+        phase: 'role_sync',
+        action: 'session_get',
+        email: result.user.email,
+        betterAuthId: result.user.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
 
-  cookieStore.set(SESSION_COOKIE, 'active', { expires, httpOnly: true, sameSite: 'lax' });
-  cookieStore.set(EMAIL_COOKIE, payload.email, { expires, httpOnly: true, sameSite: 'lax' });
-  cookieStore.set(NAME_COOKIE, payload.name, { expires, httpOnly: true, sameSite: 'lax' });
-  cookieStore.set(ROLE_COOKIE, payload.role, { expires, httpOnly: true, sameSite: 'lax' });
+  return {
+    isAuthenticated: true,
+    betterAuthId: result.user.id,
+    email: result.user.email,
+    name: result.user.name,
+    role: role ?? 'customer',
+  };
 }
 
 export async function clearSession(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE);
-  cookieStore.delete(EMAIL_COOKIE);
-  cookieStore.delete(NAME_COOKIE);
-  cookieStore.delete(ROLE_COOKIE);
+  const headerStore = await headers();
+  await auth.api.signOut({
+    headers: toHeadersObject(headerStore),
+  });
 }

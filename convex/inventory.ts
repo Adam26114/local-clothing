@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 
+import type { Id } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 type ProductVariant = {
@@ -12,15 +13,15 @@ type ProductVariant = {
 };
 
 type ProductRecord = {
-  _id: string;
+  _id: Id<'products'>;
   name: string;
   isPublished: boolean;
   colorVariants: ProductVariant[];
 };
 
 type InventoryAuditRecord = {
-  _id: string;
-  productId: string;
+  _id: Id<'inventoryAuditLogs'>;
+  productId: Id<'products'>;
   variantId: string;
   size: string;
   oldValue: number;
@@ -84,7 +85,7 @@ export const updateStockWithAudit = mutation({
   handler: async (
     ctx,
     args: {
-      productId: string;
+      productId: Id<'products'>;
       variantId: string;
       size: string;
       newValue: number;
@@ -160,7 +161,7 @@ export const listAuditLogs = query({
   },
   handler: async (
     ctx,
-    args: { productId?: string; variantId?: string; size?: string; limit?: number }
+    args: { productId?: Id<'products'>; variantId?: string; size?: string; limit?: number }
   ) => {
     const logs = (await ctx.db.query('inventoryAuditLogs').collect()) as InventoryAuditRecord[];
 

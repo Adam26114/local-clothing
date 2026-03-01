@@ -7,8 +7,12 @@ import { getSession } from '@/lib/auth/session';
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
 
-  if (!session.isAuthenticated || session.role !== 'admin') {
-    redirect('/auth/login');
+  if (!session.isAuthenticated) {
+    redirect('/auth/login?next=/admin');
+  }
+
+  if (session.role !== 'admin') {
+    redirect('/account');
   }
 
   return (

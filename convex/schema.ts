@@ -24,6 +24,62 @@ const colorVariant = v.object({
 });
 
 export default defineSchema({
+  authUsers: defineTable({
+    id: v.string(),
+    name: v.string(),
+    email: v.string(),
+    emailVerified: v.boolean(),
+    image: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_email', ['email'])
+    .index('by_createdAt', ['createdAt']),
+
+  authSessions: defineTable({
+    id: v.string(),
+    token: v.string(),
+    userId: v.string(),
+    expiresAt: v.number(),
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_token', ['token'])
+    .index('by_userId', ['userId'])
+    .index('by_expiresAt', ['expiresAt']),
+
+  authAccounts: defineTable({
+    id: v.string(),
+    accountId: v.string(),
+    providerId: v.string(),
+    userId: v.string(),
+    accessToken: v.optional(v.string()),
+    refreshToken: v.optional(v.string()),
+    idToken: v.optional(v.string()),
+    accessTokenExpiresAt: v.optional(v.number()),
+    refreshTokenExpiresAt: v.optional(v.number()),
+    scope: v.optional(v.string()),
+    password: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_provider_account', ['providerId', 'accountId'])
+    .index('by_userId', ['userId']),
+
+  authVerificationTokens: defineTable({
+    id: v.string(),
+    identifier: v.string(),
+    value: v.string(),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_value', ['value'])
+    .index('by_identifier', ['identifier'])
+    .index('by_expiresAt', ['expiresAt']),
+
   users: defineTable({
     email: v.string(),
     name: v.string(),
