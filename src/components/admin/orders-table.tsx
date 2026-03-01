@@ -9,16 +9,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ORDER_STATUSES } from '@/lib/constants';
 import { formatMmk } from '@/lib/currency';
-import { orders } from '@/lib/mock-data';
 import { Order, OrderStatus } from '@/lib/types';
 
-export function OrdersTable() {
+export function OrdersTable({
+  initialOrders,
+  showStatusFilter = true,
+}: {
+  initialOrders: Order[];
+  showStatusFilter?: boolean;
+}) {
   const [status, setStatus] = useState<'all' | OrderStatus>('all');
 
   const filteredData = useMemo(() => {
-    if (status === 'all') return orders;
-    return orders.filter((item) => item.status === status);
-  }, [status]);
+    if (status === 'all') return initialOrders;
+    return initialOrders.filter((item) => item.status === status);
+  }, [status, initialOrders]);
 
   const columns: Array<ColumnDef<Order>> = [
     {
@@ -70,26 +75,32 @@ export function OrdersTable() {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-medium">Status:</span>
-        <select
-          className="rounded border bg-white px-3 py-1 text-sm"
-          value={status}
-          onChange={(event) => setStatus(event.target.value as 'all' | OrderStatus)}
-        >
-          <option value="all">All</option>
-          {ORDER_STATUSES.map((value) => (
-            <option key={value} value={value}>
-              {value}
-            </option>
-          ))}
-        </select>
-      </div>
+      {showStatusFilter ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium">Status:</span>
+          <select
+            className="rounded border bg-white px-3 py-1 text-sm"
+            value={status}
+            onChange={(event) => setStatus(event.target.value as 'all' | OrderStatus)}
+          >
+            <option value="all">All</option>
+            {ORDER_STATUSES.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
       <AdminDataTable
         tableId="orders"
         columns={withRowSelection(columns)}
         data={filteredData}
         searchPlaceholder="Search by order #, customer, phone, email"
+        showTabs={!showStatusFilter}
+        variant={showStatusFilter ? 'default' : 'dashboard'}
+        enableRowDrag={!showStatusFilter}
+        getRowId={(row) => row._id}
       />
     </div>
   );

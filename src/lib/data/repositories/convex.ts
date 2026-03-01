@@ -5,21 +5,28 @@ import { BRAND } from '@/lib/constants';
 import type {
   Category,
   InventoryAuditLog,
+  Order,
   Product,
   SizeKey,
   StoreSettings,
+  User,
   VariantMeasurement,
 } from '@/lib/types';
 
 import type {
   CategoryRepository,
+  DashboardRepository,
   DataRepositories,
   InventoryRepository,
+  OrdersRepository,
   ProductRepository,
   ProductUpsertInput,
+  RevenueRange,
+  RevenueSeriesPoint,
   UpdateStockInput,
   InventoryRow,
   SettingsRepository,
+  UsersRepository,
 } from '@/lib/data/repositories/types';
 
 type UnknownRecord = Record<string, unknown>;
@@ -188,6 +195,66 @@ function toInventoryRow(input: UnknownRecord): InventoryRow {
   };
 }
 
+function toOrderItem(input: UnknownRecord): Order['items'][number] {
+  return {
+    productId: String(input.productId ?? ''),
+    colorVariantId: String(input.colorVariantId ?? ''),
+    name: String(input.name ?? ''),
+    size: String(input.size ?? '') as SizeKey,
+    color: String(input.color ?? ''),
+    quantity: Number(input.quantity ?? 0),
+    price: Number(input.price ?? 0),
+  };
+}
+
+function toOrder(input: UnknownRecord): Order {
+  const customerInfoRaw =
+    input.customerInfo && typeof input.customerInfo === 'object'
+      ? (input.customerInfo as UnknownRecord)
+      : {};
+
+  return {
+    _id: String(input._id ?? ''),
+    orderNumber: String(input.orderNumber ?? ''),
+    customerId: toStringOrUndefined(input.customerId),
+    customerInfo: {
+      name: String(customerInfoRaw.name ?? ''),
+      email: String(customerInfoRaw.email ?? ''),
+      phone: String(customerInfoRaw.phone ?? ''),
+      address: toStringOrUndefined(customerInfoRaw.address),
+    },
+    items: Array.isArray(input.items)
+      ? input.items
+          .filter((item): item is UnknownRecord => Boolean(item) && typeof item === 'object')
+          .map(toOrderItem)
+      : [],
+    subtotal: Number(input.subtotal ?? 0),
+    shippingFee: Number(input.shippingFee ?? 0),
+    total: Number(input.total ?? 0),
+    deliveryMethod: (input.deliveryMethod === 'pickup' ? 'pickup' : 'shipping') as
+      | 'shipping'
+      | 'pickup',
+    paymentMethod: 'cod',
+    status: String(input.status ?? 'pending') as Order['status'],
+    notes: toStringOrUndefined(input.notes),
+    createdAt: Number(input.createdAt ?? 0),
+    updatedAt: Number(input.updatedAt ?? 0),
+  };
+}
+
+function toUser(input: UnknownRecord): User {
+  return {
+    _id: String(input._id ?? ''),
+    email: String(input.email ?? ''),
+    name: String(input.name ?? ''),
+    phone: toStringOrUndefined(input.phone),
+    role: input.role === 'admin' ? 'admin' : 'customer',
+    betterAuthId: String(input.betterAuthId ?? ''),
+    isActive: toBoolean(input.isActive),
+    createdAt: Number(input.createdAt ?? 0),
+  };
+}
+
 const refs = {
   categoriesList: makeFunctionReference<'query'>('categories:list'),
   settingsGet: makeFunctionReference<'query'>('settings:get'),
@@ -204,6 +271,9 @@ const refs = {
   inventoryListFlattened: makeFunctionReference<'query'>('inventory:listFlattened'),
   inventoryUpdateStock: makeFunctionReference<'mutation'>('inventory:updateStockWithAudit'),
   inventoryListAuditLogs: makeFunctionReference<'query'>('inventory:listAuditLogs'),
+  ordersList: makeFunctionReference<'query'>('orders:list'),
+  orderDetail: makeFunctionReference<'query'>('orders:detail'),
+  usersList: makeFunctionReference<'query'>('users:list'),
 };
 
 async function listCategories() {
@@ -417,11 +487,113 @@ function createInventoryRepository(): InventoryRepository {
   };
 }
 
+function createOrdersRepository(): OrdersRepository {
+  return {
+    async list() {
+      const convex = getConvexClient();
+      const rows = (await convex.query(refs.ordersList, {})) as UnknownRecord[];
+      return rows.map(toOrder);
+    },
+
+    async getById(id) {
+      const convex = getConvexClient();
+      const row = (await convex.query(refs.orderDetail, {
+        id,
+      })) as UnknownRecord | null;
+      return row ? toOrder(row) : undefined;
+    },
+  };
+}
+
+function createUsersRepository(): UsersRepository {
+  return {
+    async list() {
+      const convex = getConvexClient();
+      const rows = (await convex.query(refs.usersList, {})) as UnknownRecord[];
+      return rows.map(toUser);
+    },
+
+    async getById(id) {
+      const users = await this.list();
+      return users.find((user) => user._id === id);
+    },
+  };
+}
+
+function getRangeDays(range: RevenueRange): number {
+  if (range === '7d') return 7;
+  if (range === '30d') return 30;
+  return 90;
+}
+
+function dayKey(timestamp: number): string {
+  return new Date(timestamp).toISOString().slice(0, 10);
+}
+
+function buildRevenueSeries(orders: Order[], range: RevenueRange): RevenueSeriesPoint[] {
+  const totalDays = getRangeDays(range);
+  const today = new Date();
+  const points: RevenueSeriesPoint[] = [];
+
+  for (let i = totalDays - 1; i >= 0; i -= 1) {
+    const date = new Date(today);
+    date.setHours(0, 0, 0, 0);
+    date.setDate(today.getDate() - i);
+    points.push({
+      date: date.toISOString().slice(0, 10),
+      revenue: 0,
+      orderCount: 0,
+    });
+  }
+
+  const indexByDate = new Map(points.map((point, idx) => [point.date, idx]));
+
+  for (const order of orders) {
+    if (order.status === 'cancelled') continue;
+    const key = dayKey(order.createdAt);
+    const idx = indexByDate.get(key);
+    if (idx == null) continue;
+    points[idx].revenue += order.total;
+    points[idx].orderCount += 1;
+  }
+
+  return points;
+}
+
+function createDashboardRepository(): DashboardRepository {
+  return {
+    async getKpis() {
+      const [orders, products, users] = await Promise.all([
+        createOrdersRepository().list(),
+        createProductRepository().list({ publishedOnly: false }),
+        createUsersRepository().list(),
+      ]);
+
+      return {
+        totalRevenueMmk: orders
+          .filter((order) => order.status !== 'cancelled')
+          .reduce((sum, order) => sum + order.total, 0),
+        pendingOrders: orders.filter((order) => order.status === 'pending').length,
+        activeProducts: products.filter((product) => product.isPublished).length,
+        activeAccounts: users.filter((user) => user.isActive).length,
+      };
+    },
+
+    async getRevenueSeries(range) {
+      const orders = await createOrdersRepository().list();
+      return buildRevenueSeries(orders, range);
+    },
+  };
+}
+
 export function createConvexRepositories(): DataRepositories {
   return {
     products: createProductRepository(),
     categories: createCategoryRepository(),
     settings: createSettingsRepository(),
     inventory: createInventoryRepository(),
+    orders: createOrdersRepository(),
+    users: createUsersRepository(),
+    dashboard: createDashboardRepository(),
   };
 }

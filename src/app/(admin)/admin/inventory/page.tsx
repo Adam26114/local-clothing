@@ -7,8 +7,11 @@ export default async function AdminInventoryPage() {
   const rows = await repositories.inventory.listFlattened();
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Inventory</h1>
+    <div className="space-y-6 px-4 lg:px-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Inventory</h1>
+        <p className="text-sm text-zinc-600">Monitor stock levels by product, color variant, and size.</p>
+      </div>
       <DataSourceNotice selection={selection} />
       <InventoryTable initialRows={rows} />
     </div>

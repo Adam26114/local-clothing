@@ -1,4 +1,12 @@
-import type { Category, InventoryAuditLog, Product, SizeKey, StoreSettings } from '@/lib/types';
+import type {
+  Category,
+  InventoryAuditLog,
+  Order,
+  Product,
+  SizeKey,
+  StoreSettings,
+  User,
+} from '@/lib/types';
 
 export type ProductUpsertInput = Omit<Product, '_id' | 'createdAt' | 'updatedAt'>;
 
@@ -18,6 +26,21 @@ export type UpdateStockInput = {
   size: SizeKey;
   newValue: number;
   changedBy: string;
+};
+
+export type RevenueRange = '90d' | '30d' | '7d';
+
+export type RevenueSeriesPoint = {
+  date: string;
+  revenue: number;
+  orderCount: number;
+};
+
+export type DashboardKpi = {
+  totalRevenueMmk: number;
+  pendingOrders: number;
+  activeProducts: number;
+  activeAccounts: number;
 };
 
 export interface ProductRepository {
@@ -54,9 +77,27 @@ export interface InventoryRepository {
   }): Promise<InventoryAuditLog[]>;
 }
 
+export interface OrdersRepository {
+  list(): Promise<Order[]>;
+  getById(id: string): Promise<Order | undefined>;
+}
+
+export interface UsersRepository {
+  list(): Promise<User[]>;
+  getById(id: string): Promise<User | undefined>;
+}
+
+export interface DashboardRepository {
+  getKpis(): Promise<DashboardKpi>;
+  getRevenueSeries(range: RevenueRange): Promise<RevenueSeriesPoint[]>;
+}
+
 export type DataRepositories = {
   products: ProductRepository;
   categories: CategoryRepository;
   settings: SettingsRepository;
   inventory: InventoryRepository;
+  orders: OrdersRepository;
+  users: UsersRepository;
+  dashboard: DashboardRepository;
 };
