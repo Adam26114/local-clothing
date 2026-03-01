@@ -19,6 +19,16 @@ export const byEmail = query({
   },
 });
 
+export const byBetterAuthId = query({
+  args: { betterAuthId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('users')
+      .withIndex('by_betterAuthId', (q) => q.eq('betterAuthId', args.betterAuthId))
+      .first();
+  },
+});
+
 export const upsertFromAuth = mutation({
   args: {
     email: v.string(),

@@ -1,18 +1,5 @@
-import { NextResponse } from 'next/server';
+import { toNextJsHandler } from 'better-auth/next-js';
 
-export async function GET() {
-  return NextResponse.json({
-    ok: true,
-    message: 'Better Auth route scaffold is ready. Configure adapters to enable full auth APIs.',
-  });
-}
+import { auth } from '@/lib/auth/better-auth';
 
-export async function POST() {
-  return NextResponse.json(
-    {
-      ok: false,
-      message: 'Auth API handler is scaffolded but not connected to database adapters yet.',
-    },
-    { status: 501 }
-  );
-}
+export const { GET, POST, PATCH, PUT, DELETE } = toNextJsHandler(auth);

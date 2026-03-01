@@ -1,6 +1,7 @@
 # Project Histories
 
 ## Timeline
+
 - PRD established: `Myanmar_Ecommerce_PRD_v2.1.0.docx` adopted as source of truth.
 - Bootstrap phase completed:
   - Next.js App Router scaffold
@@ -16,6 +17,7 @@
   - storefront catalog routes migrated to repository/Convex pathway
 
 ## Key Decisions
+
 - Backend integration order: admin-first priority.
 - Data migration strategy: dual-mode transition (`mock|convex`) for lower risk.
 - Backend source of truth: Convex for business/domain data.
@@ -23,6 +25,7 @@
 - Product model strategy: embedded variants inside product documents.
 
 ## PRD Alignment Notes
+
 - Brand and locked business fields aligned to PRD inputs (Khit brand, pickup/contact defaults).
 - Admin-first sequence respected by prioritizing:
   - products management
@@ -32,6 +35,7 @@
   - PLP and PDP reads
 
 ## Milestone Notes
+
 - Stage 1 deliverable status: complete and validated.
 - Stage 2 deliverable status: pending implementation.
 - Known environment constraint:

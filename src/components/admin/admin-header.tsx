@@ -1,5 +1,4 @@
-import Link from 'next/link';
-
+import { logoutAction } from '@/app/(store)/auth/actions';
 import { getSession } from '@/lib/auth/session';
 
 export async function AdminHeader() {
@@ -13,9 +12,11 @@ export async function AdminHeader() {
       </div>
       <div className="flex items-center gap-4 text-sm">
         <span className="rounded bg-zinc-100 px-3 py-1">{session.email ?? 'admin@khit.mm'}</span>
-        <Link href="/auth/login" className="text-zinc-600 hover:text-black">
-          Switch account
-        </Link>
+        <form action={logoutAction}>
+          <button type="submit" className="text-zinc-600 hover:text-black">
+            Sign out
+          </button>
+        </form>
       </div>
     </header>
   );
